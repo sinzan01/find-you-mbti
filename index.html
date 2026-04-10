@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MBTI 性格测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: #f7f8fa;
+      color: #333;
+      padding: 20px 15px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 10px;
+      color: #4a4a4a;
+    }
+
+    .progress {
+      height: 6px;
+      background: #eaeaea;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: #b8c7e4;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .question {
+      font-size: 16px;
+      margin-bottom: 24px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .options {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-yes {
+      background: #d7e2f4;
+      color: #2d3748;
+    }
+
+    .btn-no {
+      background: #f0e8f8;
+      color: #2d3748;
+    }
+
+    .btn-scene {
+      background: #e2f0ee;
+      color: #2d3748;
+    }
+
+    .btn-prev {
+      background: #eee;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .tip {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .result-section {
+      display: none;
+    }
+
+    .type-label {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      color: #556a94;
+      margin: 10px 0;
+    }
+
+    .type-name {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #666;
+    }
+
+    .chart {
+      height: 180px;
+      margin: 20px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+    }
+
+    .bar-item {
+      width: 20%;
+      text-align: center;
+    }
+
+    .bar {
+      width: 100%;
+      background: #b8c7e4;
+      border-radius: 4px 4px 0 0;
+      margin: 0 auto 6px;
+    }
+
+    .bar-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .section-title {
+      font-size: 17px;
+      margin: 16px 0 10px;
+      color: #444;
+    }
+
+    .match-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .match-card {
+      background: #f5f7fa;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .desc {
+      font-size: 15px;
+      color: #555;
+      line-height: 1.7;
+    }
+
+    .restart {
+      background: #b8c7e4;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card test-section">
+      <div class="title">MBTI 性格测试</div>
+      <div class="progress">
+        <div class="progress-bar" id="progress"></div>
+      </div>
+      <div class="question" id="question"></div>
+      <div class="options" id="options"></div>
+      <button class="btn btn-prev" id="prev">上一题</button>
+      <div class="tip" id="tip">请选择一个答案</div>
+    </div>
+
+    <div class="card result-section">
+      <div class="type-label" id="type"></div>
+      <div class="type-name" id="typeName"></div>
+      <div class="chart" id="chart"></div>
+      <div class="section-title">人格解读</div>
+      <div class="desc" id="analysis"></div>
+
+      <div class="section-title">职业适配</div>
+      <div class="desc" id="career"></div>
+
+      <div class="section-title">伴侣匹配推荐</div>
+      <div class="match-grid" id="lover"></div>
+
+      <div class="section-title">人格契合度推荐</div>
+      <div class="match-grid" id="match"></div>
+
+      <button class="btn restart" onclick="restart()">重新测试</button>
+    </div>
+  </div>
+
+  <script>
+    const total = 60;
+    let current = 0;
+    let answers = [];
+    let history = [];
+
+    // 50道是/否题 + 10道情景题
+    const questions = [
+      {q:"你更愿意独自度过周末",t:"yn"},
+      {q:"社交后你常感到疲惫需要恢复",t:"yn"},
+      {q:"你习惯先行动再思考",t:"yn"},
+      {q:"你更关注现实而非幻想",t:"yn"},
+      {q:"做决定时你更看重逻辑",t:"yn"},
+      {q:"你喜欢计划明确不喜欢突发",t:"yn"},
+      {q:"你容易察觉他人情绪变化",t:"yn"},
+      {q:"你喜欢尝试新鲜事物",t:"yn"},
+      {q:"你习惯先听再讲",t:"yn"},
+      {q:"你更在意细节而非大局",t:"yn"},
+      {q:"你很少情绪化",t:"yn"},
+      {q:"你喜欢把事情安排妥当",t:"yn"},
+      {q:"你容易共情流泪",t:"yn"},
+      {q:"你常走神发呆",t:"yn"},
+      {q:"聚会中你通常不主动破冰",t:"yn"},
+      {q:"你相信经验比想象可靠",t:"yn"},
+      {q:"你觉得公平比和谐更重要",t:"yn"},
+      {q:"你讨厌临时改变计划",t:"yn"},
+      {q:"你说话习惯考虑他人感受",t:"yn"},
+      {q:"你喜欢脑洞大开的讨论",t:"yn"},
+      {q:"你在人群中依然感到孤独",t:"yn"},
+      {q:"你注重实际用处",t:"yn"},
+      {q:"你很少被情绪影响判断",t:"yn"},
+      {q:"你喜欢列清单",t:"yn"},
+      {q:"你常安慰别人",t:"yn"},
+      {q:"你喜欢抽象概念",t:"yn"},
+      {q:"你不喜欢成为焦点",t:"yn"},
+      {q:"你更务实",t:"yn"},
+      {q:"批评不会让你情绪化",t:"yn"},
+      {q:"你喜欢确定的生活",t:"yn"},
+      {q:"你很会照顾人情绪",t:"yn"},
+      {q:"你热爱创意",t:"yn"},
+      {q:"你喜欢小圈子好友",t:"yn"},
+      {q:"你关注当下",t:"yn"},
+      {q:"你讲道理不讲情面",t:"yn"},
+      {q:"你做事有始有终",t:"yn"},
+      {q:"你容易迁就他人",t:"yn"},
+      {q:"你喜欢未来畅想",t:"yn"},
+      {q:"你不喜欢长时间社交",t:"yn"},
+      {q:"你相信眼见为实",t:"yn"},
+      {q:"你冷静理性",t:"yn"},
+      {q:"你讨厌拖延",t:"yn"},
+      {q:"你温和包容",t:"yn"},
+      {q:"你想象力丰富",t:"yn"},
+      {q:"你习惯独处充电",t:"yn"},
+      {q:"你重视实际体验",t:"yn"},
+      {q:"你不爱情绪化表达",t:"yn"},
+      {q:"你喜欢闭环完成",t:"yn"},
+      {q:"你很有同理心",t:"yn"},
+      {q:"你偏爱灵感",t:"yn"},
+      // 情景题10道
+      {q:"初识时你更在意对方?",t:"scene",o:["气质氛围","谈吐逻辑","亲和力","成熟度"]},
+      {q:"压力大时你会?",t:"scene",o:["独自静一静","找人倾诉","制定计划","转移注意力"]},
+      {q:"做选择你更看重?",t:"scene",o:["内心感受","客观利弊","未来可能","当下稳妥"]},
+      {q:"和朋友矛盾你会?",t:"scene",o:["先安抚情绪","先讲道理","先冷处理","先解决问题"]},
+      {q:"你欣赏的伴侣是?",t:"scene",o:["温柔感性","理性独立","有趣自由","稳重可靠"]},
+      {q:"工作你更适合?",t:"scene",o:["创意创作","分析规划","助人关怀","执行落地"]},
+      {q:"你聊天更偏向?",t:"scene",o:["情感共鸣","观点碰撞","脑洞发散","实事分享"]},
+      {q:"你处理任务?",t:"scene",o:["提前规划","随到随做","边做边调","最后冲刺"]},
+      {q:"你被打动的点?",t:"scene",o:["真诚用心","能力担当","独特有趣","踏实靠谱"]},
+      {q:"你理想生活?",t:"scene",o:["自由随性","安稳有序","丰富深刻","简单平静"]}
+    ];
+
+    // 极简结果模型
+    const types = {
+      INTJ:{name:"建筑师",analysis:"独立、战略、追求深度",career:"科研、架构、策划、金融分析",lover:"ENFP、ENTP",match:"ENFP、ENTP、INFJ"},
+      INTP:{name:"逻辑学家",analysis:"好奇、思辨、热爱本质",career:"编程、科研、哲学、数据分析",lover:"ENTJ、ESTJ",match:"ENTJ、ESTJ、INTJ"},
+      ENTJ:{name:"指挥官",analysis:"果断、领导力、目标导向",career:"管理、创业、法律、医疗",lover:"INTP、ISTP",match:"INTP、ISTP、INTJ"},
+      ENTP:{name:"辩论家",analysis:"灵活、创新、擅长破局",career:"产品、营销、投资、新媒体",lover:"INFJ、INTJ",match:"INFJ、INTJ、ENFJ"},
+      INFJ:{name:"咨询师",analysis:"温柔、洞察、理想主义",career:"心理、教育、文案、设计",lover:"ENFP、ENTP",match:"ENFP、ENTP、INFP"},
+      INFP:{name:"调停者",analysis:"纯粹、共情、追求意义",career:"文创、编辑、公益、艺术",lover:"ENFJ、ESTJ",match:"ENFJ、ESTJ、INFJ"},
+      ENFJ:{name:"主人公",analysis:"温暖、感染力、助人",career:"教育、公关、人力、导师",lover:"INFP、ISFP",match:"INFP、ISFP、ENFP"},
+      ENFP:{name:"追梦人",analysis:"热情、创意、自由",career:"创意、自媒体、活动、策划",lover:"INFJ、INTJ",match:"INFJ、INTJ、ENFJ"},
+      ISTJ:{name:"物流师",analysis:"严谨、负责、务实",career:"会计、行政、技术、运营",lover:"ESFP、ESTP",match:"ESFP、ESTP、ISTP"},
+      ISFJ:{name:"守卫者",analysis:"细心、体贴、可靠",career:"医护、教师、后勤、客服",lover:"ESFP、ESTP",match:"ESFP、ESTP、ISTJ"},
+      ESTJ:{name:"总经理",analysis:"高效、规则、执行力",career:"管理、公务员、工程、销售",lover:"INFP、ISFP",match:"INFP、ISFP、ISTJ"},
+      ESFJ:{name:"执政官",analysis:"热心、社交、和谐",career:"人力、销售、服务、公关",lover:"ISTP、INTP",match:"ISTP、INTP、ISFJ"},
+      ISTP:{name:"手艺人",analysis:"冷静、动手、解决问题",career:"技术、工程、设计、医疗",lover:"ESTJ、ESFJ",match:"ESTJ、ESFJ、ISTJ"},
+      ISFP:{name:"艺术家",analysis:"敏感、审美、随性",career:"设计、摄影、美妆、手工",lover:"ESTJ、ESFJ",match:"ESTJ、ESFJ、INFP"},
+      ESTP:{name:"企业家",analysis:"果敢、应变、社交",career:"销售、市场、创业、表演",lover:"ISFJ、ISTJ",match:"ISFJ、ISTJ、ESFP"},
+      ESFP:{name:"表演者",analysis:"快乐、鲜活、感染力",career:"演艺、直播、活动、服务",lover:"ISTJ、ISFJ",match:"ISTJ、ISFJ、ESTP"}
+    };
+
+    // 渲染题目
+    function render(){
+      const q = questions[current];
+      document.getElementById("question").innerText = (current+1)+". "+q.q;
+      const opt = document.getElementById("options");
+      opt.innerHTML = "";
+      if(q.t==="yn"){
+        opt.innerHTML += `<button class="btn btn-yes" onclick="ans('yes')">是</button>`;
+        opt.innerHTML += `<button class="btn btn-no" onclick="ans('no')">否</button>`;
+      }else{
+        q.o.forEach((v,i)=>{
+          opt.innerHTML += `<button class="btn btn-scene" onclick="ans(${i})">${v}</button>`;
+        });
+      }
+      document.getElementById("progress").style.width = ((current+1)/total*100)+"%";
+      document.getElementById("prev").style.display = current===0?"none":"block";
+      document.getElementById("tip").style.display = "none";
+    }
+
+    // 答题
+    function ans(v){
+      answers[current] = v;
+      history.push(current);
+      if(current < total-1){
+        current++;
+        render();
+      }else{
+        calc();
+      }
+    }
+
+    // 上一题
+    document.getElementById("prev").onclick = ()=>{
+      if(history.length>0){
+        current = history.pop();
+        render();
+      }
+    };
+
+    // 计算结果
+    function calc(){
+      let E=0,I=0,S=0,N=0,T=0,F=0,J=0,P=0;
+      answers.forEach((a,i)=>{
+        if(i<50){
+          if([0,1,8,14,20,29,33,39].includes(i%40)) I+=a==="yes"?1:0;
+          if([2,7,13,19,25,31,37,43].includes(i%40)) N+=a==="yes"?1:0;
+          if([4,10,16,22,28,34,40,46].includes(i%40)) T+=a==="yes"?1:0;
+          if([5,11,17,23,35,41,47,49].includes(i%40)) J+=a==="yes"?1:0;
+        }
+      });
+      const ei = I>E?"I":"E";
+      const sn = N>S?"N":"S";
+      const tf = T>F?"T":"F";
+      const jp = J>P?"J":"P";
+      const type = ei+sn+tf+jp;
+      const res = types[type];
+
+      document.querySelector(".test-section").style.display = "none";
+      document.querySelector(".result-section").style.display = "block";
+      document.getElementById("type").innerText = type;
+      document.getElementById("typeName").innerText = res.name;
+
+      // 图表
+      const chart = document.getElementById("chart");
+      chart.innerHTML = `
+        <div class="bar-item"><div class="bar" style="height:${(E/(E||I)||0)*150}px"></div><div class="bar-label">E</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(I/(E||I)||0)*150}px"></div><div class="bar-label">I</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(S/(S||N)||0)*150}px"></div><div class="bar-label">S</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(N/(S||N)||0)*150}px"></div><div class="bar-label">N</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(T/(T||F)||0)*150}px"></div><div class="bar-label">T</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(F/(T||F)||0)*150}px"></div><div class="bar-label">F</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(J/(J||P)||0)*150}px"></div><div class="bar-label">J</div></div>
+        <div class="bar-item"><div class="bar" style="height:${(P/(J||P)||0)*150}px"></div><div class="bar-label">P</div></div>
+      `;
+
+      document.getElementById("analysis").innerText = res.analysis;
+      document.getElementById("career").innerText = res.career;
+
+      // 伴侣
+      const lover = document.getElementById("lover");
+      lover.innerHTML = res.lover.split("、").map(x=>`<div class="match-card">${x}</div>`).join("");
+      // 匹配
+      const match = document.getElementById("match");
+      match.innerHTML = res.match.split("、").map(x=>`<div class="match-card">${x}</div>`).join("");
+    }
+
+    function restart(){
+      current=0;
+      answers=[];
+      history=[];
+      document.querySelector(".test-section").style.display = "block";
+      document.querySelector(".result-section").style.display = "none";
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
